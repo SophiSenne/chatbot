@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot RAG Local</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; }
+        #chatbox { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-bottom: 10px; background: #f9f9f9; }
+        .message { margin-bottom: 8px; }
+        .user { text-align: right; color: #007bff; }
+        .bot { text-align: left; color: #28a745; }
+        textarea { width: 100%; padding: 10px; box-sizing: border-box; }
+        button { padding: 10px 15px; background: #007bff; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Chatbot RAG (FastAPI + ChromaDB + Gemini)</h1>
+    <div id="chatbox"></div>
+    <textarea id="userInput" rows="3" placeholder="Digite sua pergunta aqui..."></textarea>
+    <button onclick="sendMessage()">Enviar</button>
+    <div id="sources"></div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000/chat';
+
+        function displayMessage(sender, text) {
+            const chatbox = document.getElementById('chatbox');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            msgDiv.innerHTML = `<strong>${sender.toUpperCase()}:</strong> ${text}`;
+            chatbox.appendChild(msgDiv);
+            chatbox.scrollTop = chatbox.scrollHeight; // Rolar para o final
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const query = userInput.value.trim();
+            if (!query) return;
+
+            displayMessage('user', query);
+            userInput.value = ''; // Limpa a entrada
+            
+            // Exibir mensagem de espera
+            const loadingMsgId = 'loading-' + Date.now();
+            displayMessage('bot', `<span id="${loadingMsgId}">Aguardando resposta do Gemini...</span>`);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const result = await response.json();
+                
+                // Remover mensagem de espera
+                document.getElementById(loadingMsgId).parentNode.remove();
+
+                // Exibir resposta do bot
+                displayMessage('bot', result.answer);
+
+                // Exibir fontes (opcional)
+                const sourcesDiv = document.getElementById('sources');
+                sourcesDiv.innerHTML = '<h2>Fontes Utilizadas:</h2>';
+                if (result.source_documents && result.source_documents.length > 0) {
+                    const ul = document.createElement('ul');
+                    result.source_documents.forEach(source => {
+                        const li = document.createElement('li');
+                        li.textContent = source;
+                        ul.appendChild(li);
+                    });
+                    sourcesDiv.appendChild(ul);
+                } else {
+                     sourcesDiv.innerHTML += '<p>Nenhuma fonte específica citada.</p>';
+                }
+
+            } catch (error) {
+                console.error('Erro na API:', error);
+                document.getElementById(loadingMsgId).parentNode.remove();
+                displayMessage('bot', 'Erro ao conectar com a API ou pipeline RAG.');
+            }
+        }
+    </script>
+</body>
+</html>
