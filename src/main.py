@@ -1,8 +1,9 @@
 import os
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings  # ✅ Importação atualizada
+from langchain_chroma import Chroma  # ✅ Importação atualizada
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
@@ -14,6 +15,14 @@ load_dotenv()
 
 if not os.getenv("GEMINI_API_KEY"):
     raise ValueError("A variável de ambiente GEMINI_API_KEY não está configurada no arquivo .env")
+
+# ========== CONFIGURAÇÃO DE CAMINHOS ==========
+BASE_DIR = Path(__file__).resolve().parent
+CHROMA_PATH = BASE_DIR / "chroma_db"
+
+print(f"📂 Diretório base: {BASE_DIR}")
+print(f"📂 Caminho do ChromaDB: {CHROMA_PATH}")
+# =============================================
 
 # --- Modelos Pydantic para a API ---
 class Pergunta(BaseModel):
@@ -48,13 +57,26 @@ def setup_rag_pipeline():
     """Configura e retorna o pipeline RAG completo."""
     print("🚀 Iniciando a configuração do pipeline RAG...")
     
-    # 1. Carregar Modelo de Embedding
-    embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    # Verificar se o diretório existe
+    if not CHROMA_PATH.exists():
+        raise ValueError(
+            f"❌ Diretório ChromaDB não encontrado em: {CHROMA_PATH}\n"
+            f"Execute 'python index_data.py' primeiro."
+        )
     
-    # 2. Carregar o Vector Store Local (ChromaDB)
+    # 1. Carregar Modelo de Embedding (MESMO modelo usado no index_data.py)
+    print("🔧 Carregando modelo de embedding...")
+    embedding_model = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2",  # ✅ Modelo completo
+        model_kwargs={'device': 'cpu'}
+    )
+    
+    # 2. Carregar o Vector Store Local (ChromaDB) com COLLECTION_NAME
+    print(f"📦 Carregando ChromaDB de: {CHROMA_PATH}")
     vectorstore = Chroma(
-        persist_directory="./chroma_db",
-        embedding_function=embedding_model
+        persist_directory=str(CHROMA_PATH),
+        embedding_function=embedding_model,
+        collection_name="compliance_docs"  # ✅ IMPORTANTE: mesmo nome usado no index_data.py
     )
     
     # DEBUG: Verificar se há documentos no banco
@@ -63,18 +85,23 @@ def setup_rag_pipeline():
     print(f"✅ ChromaDB carregado: {count} documentos encontrados")
     
     if count == 0:
-        print("⚠️ ATENÇÃO: Nenhum documento encontrado! Execute index_data.py primeiro.")
+        raise ValueError(
+            f"❌ Nenhum documento encontrado no ChromaDB!\n"
+            f"Caminho verificado: {CHROMA_PATH}\n"
+            f"Execute 'python index_data.py' para indexar os documentos."
+        )
     
     # Configurar retriever com mais documentos
     retriever = vectorstore.as_retriever(
         search_type="similarity",
-        search_kwargs={"k": 4}  # Buscar top 4 chunks mais relevantes
+        search_kwargs={"k": 4}
     )
     
     # 3. Configurar o LLM (Gemini via API)
+    print("🤖 Configurando Gemini LLM...")
     llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0.2)
     
-    # 4. Prompt para o LLM (melhorado)
+    # 4. Prompt para o LLM
     prompt = ChatPromptTemplate.from_messages([
         ("system", """Você é um assistente de compliance da Dunder Mifflin Paper Company.
 
@@ -104,7 +131,11 @@ CONTEXTO:
 async def startup_event():
     """Executado ao iniciar o servidor para carregar o RAG pipeline."""
     global rag_chain, retriever
-    rag_chain, retriever = setup_rag_pipeline()
+    try:
+        rag_chain, retriever = setup_rag_pipeline()
+    except Exception as e:
+        print(f"❌ ERRO na inicialização: {e}")
+        raise
 
 @app.get("/")
 def read_root():
@@ -121,11 +152,11 @@ async def chat_endpoint(pergunta: Pergunta):
     try:
         print(f"\n🔍 Nova pergunta: {pergunta.query}")
         
-        # Retrieval: buscar documentos relevantes (SÍNCRONO)
+        # Retrieval: buscar documentos relevantes
         docs = retriever.invoke(pergunta.query)
         print(f"📚 Documentos recuperados: {len(docs)}")
         
-        # Generation: gerar resposta com o LLM (SÍNCRONO)
+        # Generation: gerar resposta com o LLM
         print("🤖 Gerando resposta com Gemini...")
         answer = rag_chain.invoke(pergunta.query)
         
@@ -153,7 +184,9 @@ def health_check():
     """Endpoint para verificar se o servidor está funcionando."""
     return {
         "status": "healthy",
-        "rag_initialized": rag_chain is not None
+        "rag_initialized": rag_chain is not None,
+        "chroma_path": str(CHROMA_PATH),
+        "chroma_exists": CHROMA_PATH.exists()
     }
 
 @app.get("/debug/test-retrieval")
