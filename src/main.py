@@ -3,11 +3,9 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-
-# Importar routers
 from agents.chatbot import router as chatbot_router, setup_rag_pipeline
+from agents.fraud_detector import router as fraud_router, setup_fraud_pipeline
 from agents.audit_agent import router as audit_router
-
 load_dotenv()
 
 if not os.getenv("GEMINI_API_KEY"):
@@ -60,6 +58,12 @@ async def startup_event():
     except Exception as e:
         print(f"❌ ERRO na inicialização: {e}")
         raise
+
+    try:
+        setup_fraud_pipeline()
+    except Exception as e:
+        print(f"Aviso: pipeline de fraude não inicializado: {e}")
+
 
 if __name__ == "__main__":
     import uvicorn
