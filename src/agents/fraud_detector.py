@@ -13,7 +13,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_chroma import Chroma
+from langchain_community.vectorstores import Chroma
 
 BASE_DIR = Path(__file__).resolve().parent
 # BASE_DIR está em src/agents, então ../../data vai para a raiz do projeto
@@ -145,7 +145,8 @@ def setup_fraud_pipeline(rebuild_email_index: bool = False):
     compliance_text = COMPLIANCE_PATH.read_text(encoding="utf-8")
     transactions_cache = _load_transactions()
     email_retriever = _build_email_retriever(rebuild=rebuild_email_index)
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0.1)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0.1, google_api_key=GEMINI_API_KEY,
+        convert_system_message_to_human=True)
 
     return {
         "transactions_loaded": len(transactions_cache),

@@ -11,3 +11,8 @@ chromadb==0.4.22
 sentence-transformers>=2.6.0
 huggingface-hub>=0.23.0       
 torch>=2.0.0
+
+
+pydantic-core==2.18.1
+
+
