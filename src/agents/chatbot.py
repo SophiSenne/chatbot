@@ -1,12 +1,23 @@
 from pathlib import Path
+import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from dotenv import load_dotenv
+
+load_dotenv()
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError(
+        "⚠️ GEMINI_API_KEY não encontrada! "
+        "Configure a variável de ambiente ou crie um arquivo .env"
+    )
 
 BASE_DIR = Path(__file__).resolve().parent
 CHROMA_PATH = BASE_DIR / "../chroma_db"
@@ -75,7 +86,11 @@ def setup_rag_pipeline():
     )
     
     print("Configurando Gemini LLM...")
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0.2)
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.0-flash-exp", 
+        temperature=0.2, 
+        google_api_key=GEMINI_API_KEY,
+        convert_system_message_to_human=True)
     
     prompt = ChatPromptTemplate.from_messages([
         ("system", """Você é um assistente de compliance da Dunder Mifflin Paper Company.
