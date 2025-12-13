@@ -51,7 +51,7 @@ def index_documents():
         print(f"Erro ao carregar modelo de embeddings: {e}")
         return
     
-    persist_dir = "./chroma_db"
+    persist_dir = "../chroma_db"
     
     if os.path.exists(persist_dir):
         print(f"Removendo banco antigo")

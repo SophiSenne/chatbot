@@ -3,213 +3,781 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Compliance Inteligente</title>
+    <title>Sistema de Compliance & Auditoria - Dunder Mifflin</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 40px auto; background-color: #f4f4f9; color: #333; }
-        
-        /* Estilo das Abas */
-        .tab-container { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
-        .tab-button { padding: 10px 20px; cursor: pointer; background: #e0e0e0; border: none; margin-right: 5px; border-radius: 5px 5px 0 0; font-weight: bold; }
-        .tab-button.active { background: #007bff; color: white; }
-        .tab-content { display: none; padding: 20px; background: white; border-radius: 0 5px 5px 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .tab-content.active { display: block; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-        /* Estilos do Chatbot */
-        #chatbox { border: 1px solid #ddd; padding: 15px; height: 350px; overflow-y: scroll; margin-bottom: 15px; background: #fff; border-radius: 5px; }
-        .message { margin-bottom: 10px; padding: 8px 12px; border-radius: 10px; max-width: 80%; }
-        .user { text-align: right; background-color: #e3f2fd; margin-left: auto; color: #0056b3; }
-        .bot { text-align: left; background-color: #f1f8e9; margin-right: auto; color: #2e7d32; }
-        .input-group { display: flex; gap: 10px; }
-        textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; resize: vertical; }
-        
-        /* Estilos da Auditoria de Fraude */
-        .controls { background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #ffeeba; }
-        .controls label { font-weight: bold; margin-right: 10px; }
-        .fraud-card { border: 1px solid #ffcccc; background: #fff5f5; padding: 15px; margin-bottom: 15px; border-radius: 5px; border-left: 5px solid #dc3545; }
-        .fraud-badge { background: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; text-transform: uppercase; }
-        .evidence { background: #fff; padding: 10px; margin-top: 10px; border: 1px dashed #ccc; font-size: 0.9em; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-        /* Botões Gerais */
-        button.primary { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px; transition: background 0.3s; }
-        button.primary:hover { background: #0056b3; }
-        button.danger { background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-        button.danger:hover { background: #c82333; }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-        h2, h3 { margin-top: 0; }
-        code { background: #eee; padding: 2px 5px; border-radius: 3px; }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .config-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .config-panel h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .config-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            transition: border-color 0.3s;
+        }
+
+        .config-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .tab-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea.form-control {
+            min-height: 150px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .response-box {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        .response-box.show {
+            display: block;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .response-box h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .chat-history {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .chat-message.user {
+            background: #e3f2fd;
+            margin-left: 20px;
+        }
+
+        .chat-message.assistant {
+            background: #f3e5f5;
+            margin-right: 20px;
+        }
+
+        .chat-message strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #667eea;
+        }
+
+        .evidence-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .evidence-item {
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+        }
+
+        .violation-card {
+            background: #fff;
+            border: 2px solid #dc3545;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .violation-card.warning {
+            border-color: #ffc107;
+        }
+
+        .violation-card.info {
+            border-color: #17a2b8;
+        }
+
+        .severity-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .severity-high {
+            background: #dc3545;
+            color: white;
+        }
+
+        .severity-medium {
+            background: #ffc107;
+            color: black;
+        }
+
+        .severity-low {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload-area:hover {
+            background: #f8f9fa;
+            border-color: #764ba2;
+        }
+
+        .file-upload-area.dragover {
+            background: #e3f2fd;
+            border-color: #2196F3;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background: #28a745;
+        }
+
+        .status-offline {
+            background: #dc3545;
+        }
+
+        .fraud-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .summary-card p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
-
-    <h1>🕵️ Sistema Integrado de Compliance</h1>
-
-    <div class="tab-container">
-        <button class="tab-button active" onclick="openTab('chat-tab')">💬 Chatbot RAG</button>
-        <button class="tab-button" onclick="openTab('fraud-tab')">⚠️ Auditoria de Fraude</button>
-    </div>
-
-    <div id="chat-tab" class="tab-content active">
-        <div id="chatbox"></div>
-        <div class="input-group">
-            <textarea id="userInput" rows="2" placeholder="Ex: O que a política diz sobre presentes?"></textarea>
-            <button class="primary" onclick="sendMessage()">Enviar</button>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Sistema de Compliance & Auditoria</h1>
+            <p>Dunder Mifflin Paper Company - RAG Intelligence System</p>
         </div>
-        <div id="sources" style="margin-top: 15px; font-size: 0.9em; color: #666;"></div>
-    </div>
 
-    <div id="fraud-tab" class="tab-content">
-        <div class="controls">
-            <h3>Configurar Varredura</h3>
-            <label>
-                Limite de Transações:
-                <input type="number" id="fraudLimit" value="5" min="1" max="50" style="width: 60px; padding: 5px;">
-            </label>
-            <label>
-                <input type="checkbox" id="checkContext" checked> Checagem Contextual (Emails)
-            </label>
-            <button class="danger" onclick="runFraudScan()">🔍 Iniciar Auditoria</button>
+        <div class="config-panel">
+            <h3>⚙️ Configuração da API</h3>
+            <input type="text" id="apiUrl" class="config-input" value="http://localhost:8000" placeholder="URL da API">
+            <button class="btn btn-secondary" onclick="testConnection()">Testar Conexão</button>
+            <span id="connectionStatus"></span>
         </div>
-        
-        <div id="fraud-results">
-            <p style="color: #666; text-align: center;">Nenhuma análise executada ainda.</p>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('chatbot')">💬 Chatbot Compliance</button>
+            <button class="tab-button" onclick="switchTab('fraud')">🔍 Detector de Fraudes</button>
+            <button class="tab-button" onclick="switchTab('audit')">📋 Investigação de Auditoria</button>
+        </div>
+
+        <!-- CHATBOT TAB -->
+        <div id="chatbot" class="tab-content active">
+            <h2>💬 Chatbot de Compliance</h2>
+            <p style="margin-bottom: 20px; color: #666;">Faça perguntas sobre as políticas de compliance da Dunder Mifflin.</p>
+            
+            <div class="chat-history" id="chatHistory"></div>
+            
+            <div class="form-group">
+                <label for="chatQuery">Sua Pergunta:</label>
+                <input type="text" id="chatQuery" class="form-control" placeholder="Ex: Quais são as regras sobre relacionamentos no trabalho?">
+            </div>
+            
+            <button class="btn btn-primary" onclick="sendChatMessage()">Enviar Pergunta</button>
+            <button class="btn btn-secondary" onclick="clearChat()">Limpar Histórico</button>
+            
+            <div class="loading" id="chatLoading">
+                <div class="spinner"></div>
+                <p>Processando sua pergunta...</p>
+            </div>
+            
+            <div class="response-box" id="chatResponse">
+                <h4>Resposta:</h4>
+                <div id="chatResponseContent"></div>
+                <h4 style="margin-top: 20px;">Documentos Fonte:</h4>
+                <div id="chatSources"></div>
+            </div>
+        </div>
+
+        <!-- FRAUD DETECTOR TAB -->
+        <div id="fraud" class="tab-content">
+            <h2>🔍 Detector de Fraudes</h2>
+            <p style="margin-bottom: 20px; color: #666;">Analise transações bancárias em busca de violações de compliance.</p>
+            
+            <div class="form-group">
+                <label for="fraudLimit">Limite de Transações (deixe vazio para analisar todas):</label>
+                <input type="number" id="fraudLimit" class="form-control" placeholder="Ex: 10">
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="fraudContextual" checked>
+                    Análise Contextual com Emails
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label for="emailK">Número de trechos de email por transação:</label>
+                <input type="number" id="emailK" class="form-control" value="3" min="1" max="10">
+            </div>
+            
+            <button class="btn btn-primary" onclick="runFraudScan()">Iniciar Varredura</button>
+            
+            <div class="loading" id="fraudLoading">
+                <div class="spinner"></div>
+                <p>Analisando transações...</p>
+            </div>
+            
+            <div class="response-box" id="fraudResponse">
+                <div class="fraud-summary" id="fraudSummary"></div>
+                <h4>Violações Diretas:</h4>
+                <div id="fraudDirect"></div>
+                <h4 style="margin-top: 30px;">Violações Contextuais:</h4>
+                <div id="fraudContextual"></div>
+            </div>
+        </div>
+
+        <!-- AUDIT TAB -->
+        <div id="audit" class="tab-content">
+            <h2>📋 Investigação de Auditoria</h2>
+            <p style="margin-bottom: 20px; color: #666;">Investigue suspeitas de conspiração através da análise de emails.</p>
+            
+            <div class="file-upload-area" id="fileUploadArea">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">📄 Arraste um arquivo .txt aqui ou clique para selecionar</p>
+                <input type="file" id="emailFile" accept=".txt" style="display: none;" onchange="handleFileSelect(event)">
+                <p style="color: #666; font-size: 0.9em;">Ou cole o conteúdo dos emails abaixo</p>
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="emailContent">Conteúdo dos Emails:</label>
+                <textarea id="emailContent" class="form-control" placeholder="Cole o conteúdo dos emails aqui..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="suspeito">Suspeito:</label>
+                <input type="text" id="suspeito" class="form-control" value="Michael Scott">
+            </div>
+            
+            <div class="form-group">
+                <label for="alvo">Alvo:</label>
+                <input type="text" id="alvo" class="form-control" value="Toby Flenderson">
+            </div>
+            
+            <div class="form-group">
+                <label for="suspeita">Suspeita:</label>
+                <input type="text" id="suspeita" class="form-control" value="Conspiração ativa">
+            </div>
+            
+            <button class="btn btn-primary" onclick="runAuditInvestigation()">Iniciar Investigação</button>
+            
+            <div class="loading" id="auditLoading">
+                <div class="spinner"></div>
+                <p>Investigando emails...</p>
+            </div>
+            
+            <div class="response-box" id="auditResponse">
+                <h4>Resultado da Investigação:</h4>
+                <div id="auditContent"></div>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- LÓGICA DAS ABAS ---
-        function openTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
+        let chatMessages = [];
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
             event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
         }
 
-        const API_BASE = 'http://127.0.0.1:8000';
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value;
+        }
 
-        // --- LÓGICA DO CHATBOT ---
-        async function sendMessage() {
-            const userInput = document.getElementById('userInput');
-            const query = userInput.value.trim();
-            if (!query) return;
-
-            displayMessage('user', query);
-            userInput.value = '';
+        async function testConnection() {
+            const status = document.getElementById('connectionStatus');
+            status.innerHTML = '<span class="status-indicator status-offline"></span>Testando...';
             
-            const loadingId = 'loading-' + Date.now();
-            displayMessage('bot', `<span id="${loadingId}">Consultando documentos...</span>`);
+            try {
+                const response = await fetch(getApiUrl() + '/');
+                if (response.ok) {
+                    status.innerHTML = '<span class="status-indicator status-online"></span>Conectado!';
+                } else {
+                    status.innerHTML = '<span class="status-indicator status-offline"></span>Erro na conexão';
+                }
+            } catch (error) {
+                status.innerHTML = '<span class="status-indicator status-offline"></span>Falha na conexão';
+            }
+        }
+
+        async function sendChatMessage() {
+            const query = document.getElementById('chatQuery').value.trim();
+            if (!query) {
+                alert('Por favor, digite uma pergunta.');
+                return;
+            }
+
+            const loading = document.getElementById('chatLoading');
+            const responseBox = document.getElementById('chatResponse');
+            
+            loading.classList.add('show');
+            responseBox.classList.remove('show');
+
+            chatMessages.push({ role: 'user', content: query });
+            updateChatHistory();
 
             try {
-                const response = await fetch(`${API_BASE}/chat`, {
+                const response = await fetch(getApiUrl() + '/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query: query })
                 });
 
-                const result = await response.json();
-                document.getElementById(loadingId).parentNode.remove();
-                displayMessage('bot', result.answer);
+                const data = await response.json();
+                
+                chatMessages.push({ role: 'assistant', content: data.answer, sources: data.source_documents });
+                updateChatHistory();
 
-                // Exibir fontes
-                const sourcesDiv = document.getElementById('sources');
-                sourcesDiv.innerHTML = '';
-                if (result.source_documents && result.source_documents.length > 0) {
-                    sourcesDiv.innerHTML = '<strong>Fontes:</strong> ' + result.source_documents.join(', ');
-                }
-
+                document.getElementById('chatResponseContent').innerHTML = `<p>${data.answer}</p>`;
+                
+                const sourcesHtml = data.source_documents.map((src, idx) => 
+                    `<div class="evidence-item"><strong>Fonte ${idx + 1}:</strong> ${src}</div>`
+                ).join('');
+                document.getElementById('chatSources').innerHTML = sourcesHtml;
+                
+                responseBox.classList.add('show');
+                document.getElementById('chatQuery').value = '';
             } catch (error) {
-                console.error(error);
-                document.getElementById(loadingId).parentNode.innerText = 'Erro ao conectar com o servidor.';
+                alert('Erro ao enviar pergunta: ' + error.message);
+            } finally {
+                loading.classList.remove('show');
             }
         }
 
-        function displayMessage(sender, text) {
-            const chatbox = document.getElementById('chatbox');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${sender}`;
-            msgDiv.innerHTML = `<strong>${sender === 'user' ? 'VOCÊ' : 'ASSISTENTE'}:</strong> ${text}`;
-            chatbox.appendChild(msgDiv);
-            chatbox.scrollTop = chatbox.scrollHeight;
+        function updateChatHistory() {
+            const historyDiv = document.getElementById('chatHistory');
+            historyDiv.innerHTML = chatMessages.map(msg => {
+                const cls = msg.role === 'user' ? 'user' : 'assistant';
+                return `<div class="chat-message ${cls}">
+                    <strong>${msg.role === 'user' ? 'Você' : 'Assistente'}:</strong>
+                    ${msg.content}
+                </div>`;
+            }).join('');
+            historyDiv.scrollTop = historyDiv.scrollHeight;
         }
 
-        // --- LÓGICA DA AUDITORIA DE FRAUDE ---
-        async function runFraudScan() {
-            const resultsDiv = document.getElementById('fraud-results');
-            const limit = document.getElementById('fraudLimit').value;
-            const useContext = document.getElementById('checkContext').checked;
+        function clearChat() {
+            chatMessages = [];
+            document.getElementById('chatHistory').innerHTML = '';
+            document.getElementById('chatResponse').classList.remove('show');
+        }
 
-            resultsDiv.innerHTML = '<p style="text-align:center">⏳ Analisando transações e cruzando com emails... (Isso pode demorar)</p>';
+        async function runFraudScan() {
+            const loading = document.getElementById('fraudLoading');
+            const responseBox = document.getElementById('fraudResponse');
+            
+            loading.classList.add('show');
+            responseBox.classList.remove('show');
+
+            const config = {
+                limit: document.getElementById('fraudLimit').value ? parseInt(document.getElementById('fraudLimit').value) : null,
+                contextual: document.getElementById('fraudContextual').checked,
+                email_k: parseInt(document.getElementById('emailK').value)
+            };
 
             try {
-                // 1. Setup (Garante que tudo está carregado)
-                await fetch(`${API_BASE}/fraud/setup`, { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ rebuild_email_index: false })
-                });
-
-                // 2. Scan
-                const response = await fetch(`${API_BASE}/fraud/scan`, {
+                const response = await fetch(getApiUrl() + '/fraud/scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        limit: parseInt(limit),
-                        contextual: useContext,
-                        email_k: 3
-                    })
+                    body: JSON.stringify(config)
                 });
 
                 const data = await response.json();
-                renderFraudResults(data);
+                
+                const summaryHtml = `
+                    <div class="summary-card">
+                        <h3>${data.direct.length}</h3>
+                        <p>Violações Diretas</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>${data.contextual.length}</h3>
+                        <p>Violações Contextuais</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>${data.direct.length + data.contextual.length}</h3>
+                        <p>Total de Violações</p>
+                    </div>
+                `;
+                document.getElementById('fraudSummary').innerHTML = summaryHtml;
 
+                document.getElementById('fraudDirect').innerHTML = renderViolations(data.direct);
+                document.getElementById('fraudContextual').innerHTML = renderViolations(data.contextual);
+                
+                responseBox.classList.add('show');
             } catch (error) {
-                console.error(error);
-                resultsDiv.innerHTML = `<p style="color:red">Erro na auditoria: ${error.message}</p>`;
+                alert('Erro ao executar varredura: ' + error.message);
+            } finally {
+                loading.classList.remove('show');
             }
         }
 
-        function renderFraudResults(data) {
-            const container = document.getElementById('fraud-results');
-            container.innerHTML = '';
+        function renderViolations(violations) {
+            if (violations.length === 0) {
+                return '<p style="color: #28a745;">✅ Nenhuma violação encontrada!</p>';
+            }
 
-            const allFrauds = [...data.direct, ...data.contextual];
+            return violations.map(v => {
+                const severityClass = v.severity.toLowerCase();
+                return `
+                    <div class="violation-card">
+                        <span class="severity-badge severity-${severityClass}">${v.severity}</span>
+                        <strong>Funcionário:</strong> ${v.transaction.funcionario}<br>
+                        <strong>Descrição:</strong> ${v.transaction.descricao}<br>
+                        <strong>Valor:</strong> R$ ${v.transaction.valor}<br>
+                        <strong>Razão:</strong> ${v.reason}<br>
+                        ${v.matched_rules.length > 0 ? `<strong>Regras Violadas:</strong> ${v.matched_rules.join(', ')}<br>` : ''}
+                        ${v.recommended_action ? `<strong>Ação Recomendada:</strong> ${v.recommended_action}` : ''}
+                        ${v.evidence && v.evidence.length > 0 ? `
+                            <div style="margin-top: 10px;">
+                                <strong>Evidências:</strong>
+                                ${v.evidence.map(e => `<div class="evidence-item">${e}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
 
-            if (allFrauds.length === 0) {
-                container.innerHTML = '<div style="background:#d4edda; color:#155724; padding:15px; border-radius:5px;">✅ Nenhuma irregularidade encontrada nas transações analisadas.</div>';
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('emailContent').value = e.target.result;
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        document.getElementById('fileUploadArea').addEventListener('click', () => {
+            document.getElementById('emailFile').click();
+        });
+
+        document.getElementById('fileUploadArea').addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        });
+
+        document.getElementById('fileUploadArea').addEventListener('dragleave', (e) => {
+            e.currentTarget.classList.remove('dragover');
+        });
+
+        document.getElementById('fileUploadArea').addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.txt')) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('emailContent').value = event.target.result;
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        async function runAuditInvestigation() {
+            const emailContent = document.getElementById('emailContent').value.trim();
+            if (!emailContent) {
+                alert('Por favor, forneça o conteúdo dos emails.');
                 return;
             }
 
-            container.innerHTML = `<h3>🚨 ${allFrauds.length} Irregularidades Encontradas</h3>`;
+            const loading = document.getElementById('auditLoading');
+            const responseBox = document.getElementById('auditResponse');
+            
+            loading.classList.add('show');
+            responseBox.classList.remove('show');
 
-            allFrauds.forEach(item => {
-                const isContextual = item.evidence && item.evidence.length > 0;
-                const badge = isContextual ? "FRAUDE CONTEXTUAL (EMAILS)" : "VIOLAÇÃO DE POLÍTICA";
+            const formData = new FormData();
+            const blob = new Blob([emailContent], { type: 'text/plain' });
+            formData.append('file', blob, 'emails.txt');
+            formData.append('suspeito', document.getElementById('suspeito').value);
+            formData.append('alvo', document.getElementById('alvo').value);
+            formData.append('suspeita', document.getElementById('suspeita').value);
+
+            try {
+                const response = await fetch(getApiUrl() + '/audit/investigate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
                 
-                let html = `
-                    <div class="fraud-card">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span class="fraud-badge">${badge}</span>
-                            <span style="font-weight:bold; color:#dc3545">Severidade: ${item.severity}</span>
-                        </div>
-                        <p><strong>Transação:</strong> ${JSON.stringify(item.transaction)}</p>
-                        <p><strong>Motivo:</strong> ${item.reason}</p>
-                        <p><strong>Ação Recomendada:</strong> ${item.recommended_action || "Investigar imediatamente"}</p>
-                `;
-
-                if (isContextual) {
-                    html += `
-                        <div class="evidence">
-                            <strong>📧 Evidência encontrada nos emails:</strong><br>
-                            <ul style="margin:5px 0; padding-left:20px;">
-                                ${item.evidence.map(e => `<li>"${e.substring(0, 150)}..."</li>`).join('')}
+                const statusColor = data.suspeita_veridica ? '#dc3545' : '#28a745';
+                const statusIcon = data.suspeita_veridica ? '⚠️' : '✅';
+                
+                const resultHtml = `
+                    <div style="padding: 20px; border-left: 4px solid ${statusColor}; background: ${statusColor}22; border-radius: 8px;">
+                        <h3 style="color: ${statusColor};">${statusIcon} ${data.status}</h3>
+                        <p style="margin-top: 15px;"><strong>Conclusão:</strong></p>
+                        <p>${data.conclusao_justificada}</p>
+                        
+                        ${data.evidencias_encontradas.length > 0 ? `
+                            <p style="margin-top: 20px;"><strong>Evidências Encontradas (${data.total_evidencias}):</strong></p>
+                            <ul class="evidence-list">
+                                ${data.evidencias_encontradas.map(ev => `<li class="evidence-item">${ev}</li>`).join('')}
                             </ul>
-                        </div>
-                    `;
-                }
-
-                html += `</div>`;
-                container.innerHTML += html;
-            });
+                        ` : ''}
+                    </div>
+                `;
+                
+                document.getElementById('auditContent').innerHTML = resultHtml;
+                responseBox.classList.add('show');
+            } catch (error) {
+                alert('Erro ao executar investigação: ' + error.message);
+            } finally {
+                loading.classList.remove('show');
+            }
         }
+
+        document.getElementById('chatQuery').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
+        });
+
+        window.onload = () => {
+            testConnection();
+        };
     </script>
 </body>
 </html>

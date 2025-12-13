@@ -3,3 +3,4 @@ __pycache__
 data
 .env
 chroma_db
+chroma_emails

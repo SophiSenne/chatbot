@@ -2,7 +2,6 @@
 import sys
 from pathlib import Path
 
-# Adiciona src ao path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 try:

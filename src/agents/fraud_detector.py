@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import csv
 import json
 import shutil
@@ -11,18 +12,27 @@ from pydantic import BaseModel, Field
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+from dotenv import load_dotenv
+
+load_dotenv()
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError(
+        "⚠️ GEMINI_API_KEY não encontrada! "
+        "Configure a variável de ambiente ou crie um arquivo .env"
+    )
 
 BASE_DIR = Path(__file__).resolve().parent
-# BASE_DIR está em src/agents, então ../../data vai para a raiz do projeto
-DATA_DIR = (BASE_DIR / "../../data").resolve()
-EMAIL_DB_DIR = (BASE_DIR / "../../chroma_emails").resolve()
+DATA_DIR = (BASE_DIR / "../data").resolve()
+EMAIL_DB_DIR = (BASE_DIR / "../chroma_emails").resolve()
 
 COMPLIANCE_PATH = DATA_DIR / "politica_compliance.txt"
 TRANSACTIONS_PATH = DATA_DIR / "transacoes_bancarias.csv"
-EMAILS_PATH = DATA_DIR / "emails.txt"  # Arquivo real é emails.txt
+EMAILS_PATH = DATA_DIR / "emails.txt"
 
 router = APIRouter(prefix="/fraud", tags=["fraud"])
 

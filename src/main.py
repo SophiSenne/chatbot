@@ -26,9 +26,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Incluir routers
 app.include_router(chatbot_router)
 app.include_router(audit_router)
+app.include_router(fraud_router)
 
 @app.get("/", tags=["Root"])
 async def root():

@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.pydantic_v1 import BaseModel as LangChainBaseModel
-from langchain_core.pydantic_v1 import Field as LangChainField
+from pydantic import BaseModel, Field
+
 
 load_dotenv()
 
@@ -19,15 +19,15 @@ if not GEMINI_API_KEY:
         "Configure a variável de ambiente ou crie um arquivo .env"
     )
 
-class InvestigationResultLangChain(LangChainBaseModel):
+class InvestigationResultLangChain(BaseModel):
     """Modelo estruturado para o resultado da investigação (LangChain)"""
-    suspeita_veridica: bool = LangChainField(
+    suspeita_veridica: bool = Field(
         description="Se a suspeita de conspiração é verdadeira (True) ou falsa (False)"
     )
-    conclusao_justificada: str = LangChainField(
+    conclusao_justificada: str = Field(
         description="Explicação detalhada e fundamentada da conclusão alcançada"
     )
-    evidencias_encontradas: List[str] = LangChainField(
+    evidencias_encontradas: List[str] = Field(
         description="Lista de citações exatas dos e-mails que servem como evidências"
     )
 
