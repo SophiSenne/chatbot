@@ -2,8 +2,8 @@ from pathlib import Path
 import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
@@ -87,7 +87,7 @@ def setup_rag_pipeline():
     
     print("Configurando Gemini LLM...")
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash-exp", 
+        model="gemini-2.0-flash", 
         temperature=0.2, 
         google_api_key=GEMINI_API_KEY,
         convert_system_message_to_human=True)

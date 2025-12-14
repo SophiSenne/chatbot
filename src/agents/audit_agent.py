@@ -51,7 +51,7 @@ class InvestigationRequest(BaseModel):
         description="Descrição da suspeita"
     )
     model_name: str = Field(
-        default="gemini-2.0-flash-exp",
+        default="gemini-2.0-flash",
         description="Modelo Gemini a ser usado"
     )
 
@@ -86,7 +86,7 @@ router = APIRouter(
 )
 
 
-def create_investigation_chain(model_name: str = "gemini-2.0-flash-exp"):
+def create_investigation_chain(model_name: str = "gemini-2.0-flash"):
     """
     Cria a chain de investigação com Gemini LLM e parser estruturado.
     """
@@ -180,7 +180,7 @@ async def investigate_from_file(
     suspeito: str = "Michael Scott",
     alvo: str = "Toby Flenderson",
     suspeita: str = "Conspiração ativa",
-    model_name: str = "gemini-2.0-flash-exp"
+    model_name: str = "gemini-2.0-flash"
 ):
     try:
 

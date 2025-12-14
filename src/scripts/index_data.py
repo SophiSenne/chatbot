@@ -5,14 +5,14 @@ from pathlib import Path
 try:
     from langchain_community.document_loaders import TextLoader
     from langchain_text_splitters import RecursiveCharacterTextSplitter
-    from langchain_community.embeddings import HuggingFaceEmbeddings
-    from langchain_community.vectorstores import Chroma
+    from langchain_huggingface import HuggingFaceEmbeddings
+    from langchain_chroma import Chroma
 except ImportError as e:
     print(f"Erro: {e}")
     exit(1)
 
 def index_documents():
-    file_path = "../data/politica_compliance.txt"
+    file_path = "../../data/politica_compliance.txt"
     
     if not os.path.exists(file_path):
         print(f"Erro: Arquivo '{file_path}' não encontrado")
