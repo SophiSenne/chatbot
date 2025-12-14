@@ -433,8 +433,8 @@
             <p style="margin-bottom: 20px; color: #666;">Analise transações bancárias em busca de violações de compliance.</p>
             
             <div class="form-group">
-                <label for="fraudLimit">Limite de Transações (deixe vazio para analisar todas):</label>
-                <input type="number" id="fraudLimit" class="form-control" placeholder="Ex: 10">
+                <label for="fraudLimit">Limite de Transações:</label>
+                <input type="number" id="fraudLimit" class="form-control" placeholder="Até 4">
             </div>
             
             <div class="form-group">
@@ -603,54 +603,94 @@
             document.getElementById('chatResponse').classList.remove('show');
         }
 
-        async function runFraudScan() {
-            const loading = document.getElementById('fraudLoading');
-            const responseBox = document.getElementById('fraudResponse');
-            
-            loading.classList.add('show');
-            responseBox.classList.remove('show');
+		async function runFraudScan() {
+			const loading = document.getElementById('fraudLoading');
+			const responseBox = document.getElementById('fraudResponse');
+			
+			loading.classList.add('show');
+			responseBox.classList.remove('show');
 
-            const config = {
-                limit: document.getElementById('fraudLimit').value ? parseInt(document.getElementById('fraudLimit').value) : null,
-                contextual: document.getElementById('fraudContextual').checked,
-                email_k: parseInt(document.getElementById('emailK').value)
-            };
+			const config = {
+				limit: document.getElementById('fraudLimit').value
+					? parseInt(document.getElementById('fraudLimit').value)
+					: null,
+				contextual: document.getElementById('fraudContextual').checked,
+				email_k: parseInt(document.getElementById('emailK').value)
+			};
 
-            try {
-                const response = await fetch(getApiUrl() + '/fraud/scan', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(config)
-                });
 
-                const data = await response.json();
-                
-                const summaryHtml = `
-                    <div class="summary-card">
-                        <h3>${data.direct.length}</h3>
-                        <p>Violações Diretas</p>
-                    </div>
-                    <div class="summary-card">
-                        <h3>${data.contextual.length}</h3>
-                        <p>Violações Contextuais</p>
-                    </div>
-                    <div class="summary-card">
-                        <h3>${data.direct.length + data.contextual.length}</h3>
-                        <p>Total de Violações</p>
-                    </div>
-                `;
-                document.getElementById('fraudSummary').innerHTML = summaryHtml;
+			const MAX_REQ_PER_MIN = 10;
+			const SAFETY_MARGIN = 2;
+			const CALLS_PER_TX = config.contextual ? 2 : 1;
+			const MAX_LIMIT = Math.floor(
+				(MAX_REQ_PER_MIN - SAFETY_MARGIN) / CALLS_PER_TX
+			);
 
-                document.getElementById('fraudDirect').innerHTML = renderViolations(data.direct);
-                document.getElementById('fraudContextual').innerHTML = renderViolations(data.contextual);
-                
-                responseBox.classList.add('show');
-            } catch (error) {
-                alert('Erro ao executar varredura: ' + error.message);
-            } finally {
-                loading.classList.remove('show');
-            }
-        }
+			if (!config.limit || config.limit <= 0) {
+				alert(
+					`Defina um limite de transações.\n\n` +
+					`Máximo seguro com a configuração atual: ${MAX_LIMIT}`
+				);
+				loading.classList.remove('show');
+				return;
+			}
+
+			if (config.limit > MAX_LIMIT) {
+				alert(
+					`Limite alto demais para a cota atual do Gemini.\n\n` +
+					`Máximo permitido agora: ${MAX_LIMIT}\n` +
+					`Dica: reduza o limite ou desative a análise contextual.`
+				);
+				loading.classList.remove('show');
+				return;
+			}
+
+			try {
+				const response = await fetch(getApiUrl() + '/fraud/scan', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(config)
+				});
+
+				const data = await response.json();
+
+				if (!response.ok) {
+					alert('Erro do backend: ' + (data.detail || JSON.stringify(data)));
+					return;
+				}
+
+				if (!data.direct || !data.contextual) {
+					alert('Resposta inesperada do backend: ' + JSON.stringify(data));
+					return;
+				}
+
+				const summaryHtml = `
+					<div class="summary-card">
+						<h3>${data.direct.length}</h3>
+						<p>Violações Diretas</p>
+					</div>
+					<div class="summary-card">
+						<h3>${data.contextual.length}</h3>
+						<p>Violações Contextuais</p>
+					</div>
+					<div class="summary-card">
+						<h3>${data.direct.length + data.contextual.length}</h3>
+						<p>Total de Violações</p>
+					</div>
+				`;
+
+				document.getElementById('fraudSummary').innerHTML = summaryHtml;
+				document.getElementById('fraudDirect').innerHTML = renderViolations(data.direct);
+				document.getElementById('fraudContextual').innerHTML = renderViolations(data.contextual);
+				
+				responseBox.classList.add('show');
+			} catch (error) {
+				alert('Erro ao executar varredura: ' + error.message);
+			} finally {
+				loading.classList.remove('show');
+			}
+		}
+
 
         function renderViolations(violations) {
             if (violations.length === 0) {
