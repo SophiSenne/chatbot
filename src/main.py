@@ -39,8 +39,10 @@ async def root():
         "endpoints": {
             "chatbot": "/chat",
             "audit_investigation": "/audit/investigate",
-            "audit_file": "/audit/investigate-file",
             "audit_health": "/audit/health",
+            "fraud_setup": "/fraud/setup",
+            "fraud_scan": "/fraud/scan",
+            "fraud_health": "/fraud/health",
             "docs": "/docs",
             "redoc": "/redoc"
         }

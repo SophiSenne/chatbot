@@ -12,7 +12,11 @@ except ImportError as e:
     exit(1)
 
 def index_documents():
-    file_path = "../data/politica_compliance.txt"
+    # Usa caminhos absolutos baseados na localização do script
+    script_dir = Path(__file__).resolve().parent
+    project_dir = script_dir.parents[1]  # Volta para a raiz do projeto
+    data_dir = project_dir / "data"
+    file_path = data_dir / "politica_compliance.txt"
     
     if not os.path.exists(file_path):
         print(f"Erro: Arquivo '{file_path}' não encontrado")
@@ -51,26 +55,27 @@ def index_documents():
         print(f"Erro ao carregar modelo de embeddings: {e}")
         return
     
-    persist_dir = "../chroma_db"
+    # Usa caminho relativo ao src/ para manter compatibilidade com chatbot.py
+    persist_dir = script_dir.parent / "chroma_db"
     
-    if os.path.exists(persist_dir):
+    if persist_dir.exists():
         print(f"Removendo banco antigo")
         shutil.rmtree(persist_dir)
     
-    os.makedirs(persist_dir, exist_ok=True)
+    persist_dir.mkdir(parents=True, exist_ok=True)
     
     print("\nSalvando no ChromaDB")
     try:
         vectorstore = Chroma.from_documents(
             documents=chunks,
             embedding=embedding_model,
-            persist_directory=persist_dir,
+            persist_directory=str(persist_dir),
             collection_name="compliance_docs"
         )
         
         print(f"\nIndexação concluída com sucesso!")
         print(f"Total de chunks: {len(chunks)}")
-        print(f"Banco salvo em: {os.path.abspath(persist_dir)}")
+        print(f"Banco salvo em: {persist_dir.resolve()}")
         
         print("\nTestando busca...")
         results = vectorstore.similarity_search("compliance", k=2)
@@ -86,10 +91,10 @@ def index_documents():
         traceback.print_exc()
 
 def load_existing_vectorstore():
-   
-    persist_dir = "../chroma_db"
+    script_dir = Path(__file__).resolve().parent
+    persist_dir = script_dir.parent / "chroma_db"
     
-    if not os.path.exists(persist_dir):
+    if not persist_dir.exists():
         print(f"Banco de dados não encontrado em {persist_dir}")
         return None
     
@@ -99,7 +104,7 @@ def load_existing_vectorstore():
     )
     
     vectorstore = Chroma(
-        persist_directory=persist_dir,
+        persist_directory=str(persist_dir),
         embedding_function=embedding_model,
         collection_name="compliance_docs"
     )

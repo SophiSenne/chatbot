@@ -4,8 +4,17 @@ import os
 import csv
 import json
 import shutil
+import time
 from pathlib import Path
 from typing import List, Optional
+
+try:
+    from google.api_core.exceptions import ResourceExhausted
+except ImportError:
+    # Fallback se google-api-core não estiver disponível
+    class ResourceExhausted(Exception):
+        """Exceção para quota excedida do Gemini"""
+        pass
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -27,8 +36,9 @@ if not GEMINI_API_KEY:
     )
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = (BASE_DIR / "../data").resolve()
-EMAIL_DB_DIR = (BASE_DIR / "../chroma_emails").resolve()
+PROJECT_DIR = BASE_DIR.parents[1]
+DATA_DIR = (PROJECT_DIR / "data").resolve()
+EMAIL_DB_DIR = (PROJECT_DIR / "chroma_emails").resolve()
 
 COMPLIANCE_PATH = DATA_DIR / "politica_compliance.txt"
 TRANSACTIONS_PATH = DATA_DIR / "transacoes_bancarias.csv"
@@ -130,7 +140,7 @@ def _build_email_retriever(rebuild: bool = False):
     chunks = splitter.split_text(email_text)
 
     if not chunks:
-        raise ValueError("Nenhum chunk de email criado; verifique emails_internos.txt")
+        raise ValueError("Nenhum chunk de email criado; verifique emails.txt")
 
     embedding = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
@@ -289,26 +299,112 @@ def fraud_scan(cfg: FraudScanRequest):
     if not all([compliance_text, transactions_cache, email_retriever, llm]):
         try:
             setup_fraud_pipeline(rebuild_email_index=cfg.rebuild_email_index)
-        except Exception as exc:  # pragma: no cover - FastAPI surface
+        except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     _require_pipeline()
 
     transactions = transactions_cache or []
-    if cfg.limit:
-        transactions = transactions[: cfg.limit]
+
+    # -----------------------------
+    # Heurística simples de "suspeição"
+    # -----------------------------
+    KEYWORDS = [
+        "reembolso", "reemb", "presente", "gift", "cartão", "cartao",
+        "viagem", "hotel", "restaurante", "jantar", "almoço", "almoco",
+        "entretenimento", "cash", "dinheiro", "pix", "transfer",
+        "consultoria", "consulting", "propina", "comissão", "comissao",
+        "fornecedor", "supplier", "patrocínio", "patrocinio"
+    ]
+
+    def _parse_brl(valor_raw) -> float:
+        if valor_raw is None:
+            return 0.0
+        s = str(valor_raw).strip()
+        # aceita "82.84", "82,84", "R$ 82,84"
+        s = s.replace("R$", "").replace(" ", "")
+        if "," in s and "." in s:
+            # se vier "1.234,56" -> remove milhar e troca decimal
+            s = s.replace(".", "").replace(",", ".")
+        else:
+            s = s.replace(",", ".")
+        try:
+            return float(s)
+        except Exception:
+            return 0.0
+
+    def _suspicion_score(tx: dict) -> float:
+        desc = str(tx.get("descricao", "") or "").lower()
+        func = str(tx.get("funcionario", "") or "").lower()
+        valor = _parse_brl(tx.get("valor"))
+
+        score = 0.0
+        # valor alto pesa mais
+        score += min(valor / 200.0, 20.0)  # controla explosão
+
+        # palavras-chave
+        for kw in KEYWORDS:
+            if kw in desc:
+                score += 3.0
+
+        # alguns nomes “problemáticos” (opcional, ajuda na demo Office)
+        for name in ["michael", "dwight", "andy", "ryan"]:
+            if name in func:
+                score += 1.0
+
+        return score
+
+    # Ordena do mais suspeito para o menos suspeito
+    transactions = sorted(transactions, key=_suspicion_score, reverse=True)
+
+    # -----------------------------
+    # LIMITADOR SAFE MODE (quota)
+    # -----------------------------
+    SAFE_MAX_CONTEXTUAL = 1     # contextual = 2 chamadas/tx -> 1 é o mais estável
+    SAFE_MAX_DIRECT_ONLY = 3
+
+    requested_limit = cfg.limit if (cfg.limit and cfg.limit > 0) else None
+    if cfg.contextual:
+        effective_limit = min(requested_limit or SAFE_MAX_CONTEXTUAL, SAFE_MAX_CONTEXTUAL)
+    else:
+        effective_limit = min(requested_limit or SAFE_MAX_DIRECT_ONLY, SAFE_MAX_DIRECT_ONLY)
+
+    transactions = transactions[:effective_limit]
+
+    THROTTLE_SECONDS = 1.2
 
     direct_flags: List[TransactionFlag] = []
     contextual_flags: List[TransactionFlag] = []
 
-    for tx in transactions:
-        direct_verdict = _evaluate_direct(tx)
-        if direct_verdict.violation:
-            direct_flags.append(direct_verdict)
+    try:
+        for idx, tx in enumerate(transactions, start=1):
+            print(
+                f"[fraud] analisando {idx}/{len(transactions)} | "
+                f"score={_suspicion_score(tx):.2f} | "
+                f"funcionario={tx.get('funcionario')} | valor={tx.get('valor')} | desc={tx.get('descricao')}"
+            )
 
-        if cfg.contextual:
-            ctx_verdict = _evaluate_contextual(tx, cfg.email_k)
-            if ctx_verdict.violation:
-                contextual_flags.append(ctx_verdict)
+            direct_verdict = _evaluate_direct(tx)
+            if direct_verdict.violation:
+                direct_flags.append(direct_verdict)
+
+            if cfg.contextual:
+                ctx_verdict = _evaluate_contextual(tx, cfg.email_k)
+                if ctx_verdict.violation:
+                    contextual_flags.append(ctx_verdict)
+
+            if idx < len(transactions):
+                time.sleep(THROTTLE_SECONDS)
+
+    except ResourceExhausted as e:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "Quota do Gemini excedida (429). "
+                "Aguarde ~60s e tente novamente. "
+                "Se estiver usando análise contextual, reduza o limite de transações "
+                "ou desative o contextual."
+            ),
+        ) from e
 
     return FraudScanResponse(direct=direct_flags, contextual=contextual_flags)

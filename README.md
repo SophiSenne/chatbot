@@ -92,8 +92,10 @@ Use a interface `/docs` (Swagger UI) para testar os requisitos de Toby, navegand
 | Método | Endpoint | Descrição |
 | :--- | :--- | :--- |
 | **POST** | `/chat` | Enviar pergunta ao Chatbot RAG. |
-| **GET** | `/debug/test-retrieval` | Testar recuperação de documentos. | Testa busca vetorial com query de exemplo. |
+| **GET** | `/debug/test-retrieval` | Testar recuperação de documentos. Testa busca vetorial com query de exemplo. |
+| **GET** | `/fraud/health` | Verificar status do agente de detecção de fraudes. |
 | **POST** | `/fraud/setup` | Inicializar pipeline de fraude manualmente. Body: `FraudScanRequest` (limit, contextual, email\_k, rebuild\_email\_index). |
-| **POST** | `/fraud/scan` | Executar varredura de fraudes (direta e contextual) |
+| **POST** | `/fraud/scan` | Executar varredura de fraudes (direta e contextual). Body: `FraudScanRequest`. |
 | **POST** | `/audit/investigate` | Investigar conspiração via upload de arquivo de e-mails (Requisito 2). Tipo: `multipart/form-data`. |
+| **GET** | `/audit/health` | Verificar status do agente de auditoria. |
 
