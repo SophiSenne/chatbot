@@ -27,8 +27,8 @@ if not GEMINI_API_KEY:
     )
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = (BASE_DIR / "../data").resolve()
-EMAIL_DB_DIR = (BASE_DIR / "../chroma_emails").resolve()
+DATA_DIR = (BASE_DIR / "../../data").resolve()
+EMAIL_DB_DIR = (BASE_DIR / "../../chroma_emails").resolve()
 
 COMPLIANCE_PATH = DATA_DIR / "politica_compliance.txt"
 TRANSACTIONS_PATH = DATA_DIR / "transacoes_bancarias.csv"
@@ -46,8 +46,8 @@ class FraudScanRequest(BaseModel):
     """Configurações para a varredura de fraudes."""
 
     limit: Optional[int] = Field(
-        default=None,
-        description="Limita o número de transações analisadas (para testes rápidos).",
+        default=50,
+        description="Limita o número de transações analisadas (padrão: 50).",
     )
     contextual: bool = Field(
         default=True,
@@ -155,7 +155,7 @@ def setup_fraud_pipeline(rebuild_email_index: bool = False):
     compliance_text = COMPLIANCE_PATH.read_text(encoding="utf-8")
     transactions_cache = _load_transactions()
     email_retriever = _build_email_retriever(rebuild=rebuild_email_index)
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0.1, google_api_key=GEMINI_API_KEY,
+    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.1, google_api_key=GEMINI_API_KEY,
         convert_system_message_to_human=True)
 
     return {
@@ -295,8 +295,8 @@ def fraud_scan(cfg: FraudScanRequest):
     _require_pipeline()
 
     transactions = transactions_cache or []
-    if cfg.limit:
-        transactions = transactions[: cfg.limit]
+    limit = cfg.limit if cfg.limit is not None else 10
+    transactions = transactions[:limit]
 
     direct_flags: List[TransactionFlag] = []
     contextual_flags: List[TransactionFlag] = []

@@ -391,6 +391,9 @@
             <input type="text" id="apiUrl" class="config-input" value="http://localhost:8000" placeholder="URL da API">
             <button class="btn btn-secondary" onclick="testConnection()">Testar Conexão</button>
             <span id="connectionStatus"></span>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                💡 Dica: Se estiver acessando via 0.0.0.0, use http://0.0.0.0:8000 ou http://localhost:8000
+            </p>
         </div>
 
         <div class="tabs">
@@ -433,8 +436,8 @@
             <p style="margin-bottom: 20px; color: #666;">Analise transações bancárias em busca de violações de compliance.</p>
             
             <div class="form-group">
-                <label for="fraudLimit">Limite de Transações (deixe vazio para analisar todas):</label>
-                <input type="number" id="fraudLimit" class="form-control" placeholder="Ex: 10">
+                <label for="fraudLimit">Limite de Transações:</label>
+                <input type="number" id="fraudLimit" class="form-control" value="5" min="1" placeholder="50">
             </div>
             
             <div class="form-group">
@@ -461,7 +464,7 @@
                 <h4>Violações Diretas:</h4>
                 <div id="fraudDirect"></div>
                 <h4 style="margin-top: 30px;">Violações Contextuais:</h4>
-                <div id="fraudContextual"></div>
+                <div id="fraudContextualResults"></div>
             </div>
         </div>
 
@@ -522,7 +525,18 @@
         }
 
         function getApiUrl() {
-            return document.getElementById('apiUrl').value;
+            let url = document.getElementById('apiUrl').value.trim();
+            if (!url) {
+                // Auto-detect based on current host
+                const currentHost = window.location.hostname;
+                if (currentHost === '0.0.0.0' || currentHost === '127.0.0.1') {
+                    url = `http://${currentHost}:8000`;
+                } else {
+                    url = 'http://localhost:8000';
+                }
+                document.getElementById('apiUrl').value = url;
+            }
+            return url;
         }
 
         async function testConnection() {
@@ -610,73 +624,111 @@
             loading.classList.add('show');
             responseBox.classList.remove('show');
 
+            const limitValue = document.getElementById('fraudLimit').value;
             const config = {
-                limit: document.getElementById('fraudLimit').value ? parseInt(document.getElementById('fraudLimit').value) : null,
+                limit: limitValue ? parseInt(limitValue) : 50,
                 contextual: document.getElementById('fraudContextual').checked,
                 email_k: parseInt(document.getElementById('emailK').value)
             };
 
             try {
-                const response = await fetch(getApiUrl() + '/fraud/scan', {
+                const apiUrl = getApiUrl() + '/fraud/scan';
+                console.log('Chamando API:', apiUrl, 'com config:', config);
+                
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(config)
                 });
 
+                console.log('Resposta recebida:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Resposta não é JSON. Tipo: ${contentType}, Conteúdo: ${text.substring(0, 100)}`);
+                }
+
                 const data = await response.json();
+                console.log('Dados recebidos:', data);
+                console.log('Violações diretas:', data.direct);
+                console.log('Violações contextuais:', data.contextual);
                 
                 const summaryHtml = `
                     <div class="summary-card">
-                        <h3>${data.direct.length}</h3>
+                        <h3>${data.direct ? data.direct.length : 0}</h3>
                         <p>Violações Diretas</p>
                     </div>
                     <div class="summary-card">
-                        <h3>${data.contextual.length}</h3>
+                        <h3>${data.contextual ? data.contextual.length : 0}</h3>
                         <p>Violações Contextuais</p>
                     </div>
                     <div class="summary-card">
-                        <h3>${data.direct.length + data.contextual.length}</h3>
+                        <h3>${(data.direct ? data.direct.length : 0) + (data.contextual ? data.contextual.length : 0)}</h3>
                         <p>Total de Violações</p>
                     </div>
                 `;
                 document.getElementById('fraudSummary').innerHTML = summaryHtml;
 
-                document.getElementById('fraudDirect').innerHTML = renderViolations(data.direct);
-                document.getElementById('fraudContextual').innerHTML = renderViolations(data.contextual);
+                // Renderiza violações diretas
+                const directHtml = renderViolations(data.direct || []);
+                document.getElementById('fraudDirect').innerHTML = directHtml;
+                console.log('HTML violações diretas:', directHtml);
+
+                // Renderiza violações contextuais
+                const contextualHtml = renderViolations(data.contextual || []);
+                document.getElementById('fraudContextualResults').innerHTML = contextualHtml;
+                console.log('HTML violações contextuais:', contextualHtml);
                 
                 responseBox.classList.add('show');
             } catch (error) {
-                alert('Erro ao executar varredura: ' + error.message);
+                console.error('Erro completo:', error);
+                const errorMsg = error.message || 'Erro desconhecido';
+                alert('Erro ao executar varredura: ' + errorMsg + '\n\nVerifique:\n1. Se a API está rodando em ' + getApiUrl() + '\n2. Se a URL está correta no campo de configuração\n3. Console do navegador para mais detalhes');
             } finally {
                 loading.classList.remove('show');
             }
         }
 
         function renderViolations(violations) {
-            if (violations.length === 0) {
+            if (!violations || violations.length === 0) {
                 return '<p style="color: #28a745;">✅ Nenhuma violação encontrada!</p>';
             }
 
-            return violations.map(v => {
-                const severityClass = v.severity.toLowerCase();
-                return `
-                    <div class="violation-card">
-                        <span class="severity-badge severity-${severityClass}">${v.severity}</span>
-                        <strong>Funcionário:</strong> ${v.transaction.funcionario}<br>
-                        <strong>Descrição:</strong> ${v.transaction.descricao}<br>
-                        <strong>Valor:</strong> R$ ${v.transaction.valor}<br>
-                        <strong>Razão:</strong> ${v.reason}<br>
-                        ${v.matched_rules.length > 0 ? `<strong>Regras Violadas:</strong> ${v.matched_rules.join(', ')}<br>` : ''}
-                        ${v.recommended_action ? `<strong>Ação Recomendada:</strong> ${v.recommended_action}` : ''}
-                        ${v.evidence && v.evidence.length > 0 ? `
-                            <div style="margin-top: 10px;">
-                                <strong>Evidências:</strong>
-                                ${v.evidence.map(e => `<div class="evidence-item">${e}</div>`).join('')}
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }).join('');
+            try {
+                return violations.map(v => {
+                    const severityClass = (v.severity || 'medium').toLowerCase();
+                    const transaction = v.transaction || {};
+                    const matchedRules = v.matched_rules || [];
+                    const evidence = v.evidence || [];
+                    
+                    return `
+                        <div class="violation-card">
+                            <span class="severity-badge severity-${severityClass}">${v.severity || 'N/A'}</span>
+                            <strong>Funcionário:</strong> ${transaction.funcionario || 'N/A'}<br>
+                            <strong>Descrição:</strong> ${transaction.descricao || 'N/A'}<br>
+                            <strong>Valor:</strong> R$ ${transaction.valor || 'N/A'}<br>
+                            <strong>Razão:</strong> ${v.reason || 'N/A'}<br>
+                            ${matchedRules.length > 0 ? `<strong>Regras Violadas:</strong> ${matchedRules.join(', ')}<br>` : ''}
+                            ${v.recommended_action ? `<strong>Ação Recomendada:</strong> ${v.recommended_action}<br>` : ''}
+                            ${evidence.length > 0 ? `
+                                <div style="margin-top: 10px;">
+                                    <strong>Evidências:</strong>
+                                    ${evidence.map(e => `<div class="evidence-item">${typeof e === 'string' ? e : JSON.stringify(e)}</div>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Erro ao renderizar violações:', error, violations);
+                return `<p style="color: #dc3545;">Erro ao renderizar violações: ${error.message}</p>`;
+            }
         }
 
         function handleFileSelect(event) {

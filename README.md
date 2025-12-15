@@ -2,11 +2,14 @@
 
 Sistema de agentes inteligentes para automatizar a auditoria de compliance e investigações de e-mails, transformando o volume de documentos em conhecimento estruturado e acionável.
 
+<img width="905" height="535" alt="image" src="https://github.com/user-attachments/assets/10a0e2b8-5133-4fb4-b3f2-7f0c99377320" />
+
+
 ### Demonstração e Uso (Link do Vídeo)
 
 O vídeo abaixo demonstra o sistema em funcionamento, cobrindo os requisitos de auditoria e investigação:
 
-➡️ **[LINK PARA O VÍDEO EXPLICATIVO (COLOCAR AQUI)](https://www.google.com/search?q=https://www.youtube.com/link_da_sua_demostracao)**
+➡️ **[LINK PARA O VÍDEO EXPLICATIVO](https://youtu.be/XGcAv98tzto)**
 
 ### Arquitetura
 
